@@ -15,6 +15,23 @@ The frontend runs on Vite's dev server (http://localhost:5173) and proxies `/api
 
 `backend/.env.local` is git-ignored. `PROXY_HEADER` must match the `X-App-Proxy` value in `frontend/vertex-ai-proxy-interceptor.js`.
 
+## Deploy to Cloud Run (from this repo)
+
+The `Dockerfile` builds the frontend and serves it from the Node backend in a single container.
+From [Cloud Shell](https://shell.cloud.google.com) (already signed in to your project):
+
+```bash
+git clone https://github.com/wolfberserkr/life-auditor.git
+cd life-auditor
+gcloud run deploy councilos --source . --region us-central1 \
+  --set-env-vars GOOGLE_CLOUD_PROJECT=$(gcloud config get-value project) \
+  --no-allow-unauthenticated
+```
+
+`--no-allow-unauthenticated` keeps the app (and your Vertex AI quota) private. To open it, run
+`gcloud run services proxy councilos --region us-central1 --port 8080` in Cloud Shell and use
+**Web Preview → Preview on port 8080**.
+
 ---
 
 ## Original export notes (Vertex AI Studio)

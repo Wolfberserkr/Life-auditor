@@ -10,6 +10,8 @@ import { GoogleAuth } from 'google-auth-library';
 import fetch from 'node-fetch';
 import rateLimit from 'express-rate-limit';
 import { WebSocketServer, WebSocket } from 'ws';
+import path from 'path';
+import fs from 'fs';
 
 const app = express();
 app.use(express.json({limit: process?.env?.API_PAYLOAD_MAX_SIZE || "7mb"}));
@@ -501,6 +503,15 @@ app.post('/api-proxy', async (req, res) => {
     res.status(500).json({ error: error });
   }
 });
+
+// Serve the built frontend when FRONTEND_DIST is set (used by the Docker / Cloud Run image).
+const FRONTEND_DIST = process?.env?.FRONTEND_DIST;
+if (FRONTEND_DIST && fs.existsSync(FRONTEND_DIST)) {
+  const distDir = path.resolve(FRONTEND_DIST);
+  app.use(express.static(distDir));
+  app.get('/{*splat}', (req, res) => res.sendFile(path.join(distDir, 'index.html')));
+  console.log(`Serving frontend from ${distDir}`);
+}
 
 const server = app.listen(PORT, API_BACKEND_HOST, () => {
   console.log(`Vertex AI Backend listening at http://localhost:${PORT}`);
