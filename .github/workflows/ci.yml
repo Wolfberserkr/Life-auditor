@@ -1,0 +1,23 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+      - name: Type-check edge functions and scripts
+        run: deno task check
+      - name: Unit tests
+        run: deno task test
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Garmin worker compiles
+        run: python -m py_compile workers/garmin/sync.py workers/garmin/login.py

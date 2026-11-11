@@ -32,7 +32,7 @@ requirements gathered in the initial 20-question discovery session.
 - Nutrition & weight: weigh-ins, food logging, protein/hydration nudges
 
 ### Work
-- Rotating shifts (surveillance dept.)
+- Rotating shifts
 - **Schedule import**: I drop my roster in Telegram as a **photo/screenshot**
   or a **PDF/Excel file** → the agent extracts the shifts (Gemini vision /
   file parsing), shows a preview with ✅/✏️ buttons, then creates the
@@ -42,14 +42,14 @@ requirements gathered in the initial 20-question discovery session.
   | Field | Value |
   |---|---|
   | Title | `<emoji> Surveillance Shift (HH:MM–HH:MM)` e.g. `🔵 Surveillance Shift (05:00–14:00)` |
-  | Description | `<Colour> shift – Casino Surveillance` |
-  | Location | `Aruba Marriott Resort & Stellaris Casino` |
-  | Time zone | `America/Puerto_Rico` (UTC−4, same as Aruba) |
+  | Description | `<Colour> shift – <shift_desc_suffix>` |
+  | Location | from `cos_settings.shift_location` (kept out of this public repo) |
+  | Time zone | `America/Puerto_Rico` (UTC−4, matches the existing events) |
   | Known shifts | 🔵 Blue 05:00–14:00 (colorId 9) · 🟢 Green 13:00–22:00 (colorId 10) · others learned on first import |
 
   Re-importing a period updates/removes changed shifts instead of duplicating.
 - Shift logistics: reminders, sleep timing around nights, prep checklists
-- Projects & reports: deadlines, recurring reports (traffic / occupancy)
+- Projects & reports: deadlines and recurring reports
 
 ### Home & Family (household: me, my wife, my mother)
 - Groceries & chores, house maintenance schedule
@@ -104,7 +104,7 @@ pg_cron (weekly/monthly/quarterly) ──► review & audit jobs
 - Secrets needed: Telegram bot token, Anthropic key, Gemini key, Google OAuth
   client, Strava app credentials, Garmin login.
 
-## 5. v1 scope (MVP)
+## 5. v1 scope (MVP): built, see [SETUP.md](SETUP.md)
 1. Telegram bot + Chief of Staff with two-way chat, buttons and capture/triage into Postgres
 2. Shift-aware briefings from Google Calendar + Garmin readiness + Gmail highlights + weather
 3. Memory schema (tasks, people, notes, goals, logs)

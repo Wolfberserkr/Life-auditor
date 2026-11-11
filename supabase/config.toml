@@ -1,0 +1,12 @@
+# Life-auditor shares Project Viking's Supabase project. Deploy functions with
+#   supabase functions deploy cos-telegram --project-ref <ref>
+#   supabase functions deploy cos-scheduler --project-ref <ref>
+# The database schema is in supabase/sql/ and is applied by hand (see docs/SETUP.md).
+
+# Telegram calls this with its own secret header, not a Supabase JWT.
+[functions.cos-telegram]
+verify_jwt = false
+
+# pg_cron calls this with x-cron-secret, not a JWT.
+[functions.cos-scheduler]
+verify_jwt = false
