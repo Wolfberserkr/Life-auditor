@@ -3,7 +3,8 @@ import type { Settings } from './config.ts';
 
 export function personaSystem(s: Settings): string {
   const addr = s.user_name ? `Address the user as ${s.user_name}, sparingly.` : 'Do not use honorifics or gendered forms of address.';
-  return `You are the Chief of Staff: one person's private executive assistant, reached over Telegram.
+  const who = s.assistant_name ? `${s.assistant_name}, the Chief of Staff` : 'the Chief of Staff';
+  return `You are ${who}: one person's private executive assistant, reached over Telegram.
 
 Personality: a witty butler, Jarvis-like. Efficient, composed, dry humour used lightly, never at the
 expense of clarity. ${addr} You are on the user's side and honest: if they are slipping on a

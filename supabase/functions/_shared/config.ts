@@ -12,6 +12,7 @@ export const optEnv = (name: string): string | undefined => Deno.env.get(name) |
 
 export interface Settings {
   user_name: string | null; // how the butler addresses you
+  assistant_name: string | null; // the Chief of Staff's own name
   timezone: string; // IANA zone for shifts and briefings
   calendar_id: string; // Google Calendar to read/write
   shift_title: string; // text that marks a calendar event as a shift
@@ -29,6 +30,7 @@ export interface Settings {
 
 export const DEFAULT_SETTINGS: Settings = {
   user_name: null,
+  assistant_name: null,
   timezone: 'America/Puerto_Rico',
   calendar_id: 'primary',
   shift_title: 'Surveillance Shift',

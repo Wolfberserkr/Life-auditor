@@ -40,6 +40,7 @@ Then fill in your settings (edit the values, then run):
 ```sql
 insert into public.cos_settings (key, value) values
   ('user_name',          '"<what the butler should call you>"'),
+  ('assistant_name',     '"<the assistant's own name>"'),
   ('timezone',           '"America/Puerto_Rico"'),          -- same as your shift events
   ('roster_names',       '["<your name as printed on the roster>", "<variant>"]'),
   ('shift_location',     '"<workplace, as on your shift events>"'),
