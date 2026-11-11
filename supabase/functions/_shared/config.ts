@@ -13,6 +13,7 @@ export const optEnv = (name: string): string | undefined => Deno.env.get(name) |
 export interface Settings {
   user_name: string | null; // how the butler addresses you
   assistant_name: string | null; // the Chief of Staff's own name
+  telegram_owner_id: number | null; // claimed by the first /start
   timezone: string; // IANA zone for shifts and briefings
   calendar_id: string; // Google Calendar to read/write
   shift_title: string; // text that marks a calendar event as a shift
@@ -31,6 +32,7 @@ export interface Settings {
 export const DEFAULT_SETTINGS: Settings = {
   user_name: null,
   assistant_name: null,
+  telegram_owner_id: null,
   timezone: 'America/Puerto_Rico',
   calendar_id: 'primary',
   shift_title: 'Surveillance Shift',
@@ -47,6 +49,9 @@ export const DEFAULT_SETTINGS: Settings = {
 };
 
 let cached: { at: number; value: Settings } | null = null;
+export const clearSettingsCache = () => {
+  cached = null;
+};
 
 export async function getSettings(): Promise<Settings> {
   if (cached && Date.now() - cached.at < 60_000) return cached.value;

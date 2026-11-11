@@ -1,6 +1,6 @@
 name: Deploy edge functions
 
-# Deploys cos-telegram and cos-scheduler to the shared Supabase project when
+# Deploys the `cos` edge function to the shared Supabase project when
 # they change on main. Inert until SUPABASE_ACCESS_TOKEN and
 # SUPABASE_PROJECT_REF are set. Never touches the database: the schema in
 # supabase/sql/ is applied by hand (Project Viking owns the migration history).
@@ -32,5 +32,4 @@ jobs:
       - name: Deploy
         if: ${{ env.SUPABASE_ACCESS_TOKEN != '' && env.SUPABASE_PROJECT_REF != '' }}
         run: |
-          supabase functions deploy cos-telegram  --project-ref "$SUPABASE_PROJECT_REF" --no-verify-jwt
-          supabase functions deploy cos-scheduler --project-ref "$SUPABASE_PROJECT_REF" --no-verify-jwt
+          supabase functions deploy cos --project-ref "$SUPABASE_PROJECT_REF" --no-verify-jwt

@@ -1,16 +1,22 @@
 -- ═══════════════════════════════════════════════════════════════════════════
--- 002_cos_cron.sql: runs the Chief of Staff scheduler every 5 minutes.
+-- 002_cos_cron.sql: runs Heimdall's scheduler every 5 minutes.
 --
 -- The scheduler decides by itself whether anything is due (pre-shift brief,
--- post-shift debrief, day-off brief, reminders), so a frequent tick is cheap.
+-- post-shift debrief, day-off brief, reminders) and registers the Telegram
+-- webhook on its first run, so a frequent tick is cheap.
 --
--- Before running this file, store two secrets in Vault (once):
---   select vault.create_secret('https://<project-ref>.supabase.co', 'cos_project_url');
---   select vault.create_secret('<same value as the COS_CRON_SECRET function secret>', 'cos_cron_secret');
+-- The shared secret is generated in the database (cos_secrets.cos_cron_secret,
+-- service-role only) and read by both this job and the function, so there is
+-- nothing to copy by hand. Replace <project-ref> before running.
 -- ═══════════════════════════════════════════════════════════════════════════
 
 create extension if not exists pg_cron;
 create extension if not exists pg_net;
+
+insert into public.cos_secrets (key, value)
+select k, encode(extensions.gen_random_bytes(32), 'hex')
+from unnest(array['cos_cron_secret', 'telegram_webhook_secret', 'google_bridge_secret']) as k
+on conflict (key) do nothing;
 
 do $$
 begin
@@ -22,11 +28,10 @@ select cron.schedule(
   '*/5 * * * *',
   $job$
   select net.http_post(
-    url     := (select decrypted_secret from vault.decrypted_secrets where name = 'cos_project_url')
-               || '/functions/v1/cos-scheduler',
+    url     := 'https://<project-ref>.supabase.co/functions/v1/cos/scheduler',
     headers := jsonb_build_object(
                  'Content-Type', 'application/json',
-                 'x-cron-secret', (select decrypted_secret from vault.decrypted_secrets where name = 'cos_cron_secret')),
+                 'x-cron-secret', (select value from public.cos_secrets where key = 'cos_cron_secret')),
     body    := '{}'::jsonb,
     timeout_milliseconds := 120000
   );

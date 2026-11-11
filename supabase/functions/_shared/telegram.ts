@@ -1,6 +1,7 @@
 // Minimal Telegram Bot API client. Replies use parse_mode=HTML with a
 // sanitiser, and fall back to plain text if Telegram still rejects them.
-import { env } from './config.ts';
+import { clearSettingsCache, env, getSettings } from './config.ts';
+import { db } from './db.ts';
 
 export interface InlineButton {
   text: string;
@@ -113,8 +114,38 @@ export async function downloadFile(fileId: string): Promise<Uint8Array> {
   return new Uint8Array(await res.arrayBuffer());
 }
 
-/** The one chat this bot serves. 0 until TELEGRAM_OWNER_ID is set (then nobody is the owner). */
-export const ownerChatId = () => Number(Deno.env.get('TELEGRAM_OWNER_ID') || 0);
+// The one chat this bot serves: TELEGRAM_OWNER_ID if set, otherwise whoever
+// claimed it with the first /start (cos_settings.telegram_owner_id). 0 = unclaimed.
+let owner = 0;
+export const ownerChatId = () => owner;
+
+export async function loadOwner(): Promise<number> {
+  const s = await getSettings();
+  owner = Number(Deno.env.get('TELEGRAM_OWNER_ID') || s.telegram_owner_id || 0);
+  return owner;
+}
+
+/** Atomically claim ownership for chatId if nobody owns the bot yet. */
+export async function claimOwner(chatId: number): Promise<boolean> {
+  await db().from('cos_settings').upsert({ key: 'telegram_owner_id', value: chatId }, { onConflict: 'key', ignoreDuplicates: true });
+  const { data } = await db().from('cos_settings').select('value').eq('key', 'telegram_owner_id').maybeSingle();
+  clearSettingsCache();
+  owner = Number(data?.value ?? 0);
+  return owner === chatId;
+}
+
+export async function setWebhook(url: string, secret: string) {
+  await call('setWebhook', { url, secret_token: secret, allowed_updates: ['message', 'callback_query'] });
+  await call('setMyCommands', {
+    commands: [
+      { command: 'brief', description: 'Briefing right now' },
+      { command: 'tasks', description: 'Open tasks by area' },
+      { command: 'shifts', description: 'Your next shifts' },
+      { command: 'reset', description: 'Clear chat history' },
+      { command: 'help', description: 'What I can do' },
+    ],
+  });
+}
 
 export function escape(s: string): string {
   return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');

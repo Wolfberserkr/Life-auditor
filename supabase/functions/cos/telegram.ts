@@ -1,9 +1,10 @@
 // ═════════════════════════════════════════════════════════════════════════
-// cos-telegram: Telegram webhook for the Chief of Staff.
+// cos/telegram: Telegram webhook for the Chief of Staff (POST /cos/telegram).
 //
-// Security: Telegram must send the X-Telegram-Bot-Api-Secret-Token we set
-// with setWebhook, and only TELEGRAM_OWNER_ID is served. Everyone else gets
-// a one-line refusal (with their chat id, to help with first-time setup).
+// Security: Telegram must send the X-Telegram-Bot-Api-Secret-Token set by
+// setWebhook (cos_secrets.telegram_webhook_secret), and only the owner is
+// served. The owner is whoever sends the first private /start (or
+// TELEGRAM_OWNER_ID if set); everyone else gets a one-line refusal.
 //
 // Replies are produced after we've already answered Telegram with 200
 // (EdgeRuntime.waitUntil), so slow model calls never trigger webhook retries.
@@ -23,7 +24,18 @@ import {
   restageImport,
   stageImport,
 } from '../_shared/schedule.ts';
-import { answerCallback, downloadFile, editMessage, escape, ownerChatId, sendMessage, typing } from '../_shared/telegram.ts';
+import { getSecret, safeEqual } from '../_shared/secrets.ts';
+import {
+  answerCallback,
+  claimOwner,
+  downloadFile,
+  editMessage,
+  escape,
+  loadOwner,
+  ownerChatId,
+  sendMessage,
+  typing,
+} from '../_shared/telegram.ts';
 import { localParts } from '../_shared/time.ts';
 import { toBase64 } from '../_shared/gemini.ts';
 
@@ -35,10 +47,10 @@ type Update = any;
 const AWAITING_FIX = 'awaiting_import_fix';
 const MAX_FILE_BYTES = 15 * 1024 * 1024;
 
-Deno.serve(async (req) => {
+export async function handleTelegram(req: Request): Promise<Response> {
   if (req.method !== 'POST') return new Response('ok');
-  const secret = Deno.env.get('TELEGRAM_WEBHOOK_SECRET');
-  if (!secret || req.headers.get('x-telegram-bot-api-secret-token') !== secret) {
+  const secret = await getSecret('telegram_webhook_secret');
+  if (!safeEqual(req.headers.get('x-telegram-bot-api-secret-token'), secret)) {
     return new Response('Forbidden', { status: 403 });
   }
   const update: Update = await req.json().catch(() => null);
@@ -51,7 +63,7 @@ Deno.serve(async (req) => {
   if (typeof EdgeRuntime !== 'undefined') EdgeRuntime.waitUntil(work);
   else await work;
   return new Response('ok');
-});
+}
 
 async function reportError(e: unknown) {
   console.error(e);
@@ -61,13 +73,15 @@ async function reportError(e: unknown) {
 }
 
 async function handle(u: Update) {
+  await loadOwner();
   if (u.callback_query) return await onCallback(u.callback_query);
   const m = u.message;
   if (!m?.chat) return;
+  if (!ownerChatId() && m.chat.type === 'private' && String(m.text ?? '').startsWith('/start')) {
+    if (await claimOwner(m.chat.id)) return await welcome(m.chat.id);
+  }
   if (!ownerChatId() || m.chat.id !== ownerChatId()) {
-    if (m.chat.type === 'private') {
-      await sendMessage(m.chat.id, `This is a private assistant. (Your chat id is <code>${m.chat.id}</code>.)`);
-    }
+    if (m.chat.type === 'private') await sendMessage(m.chat.id, 'This is a private assistant.');
     return;
   }
   await typing(m.chat.id);
@@ -86,6 +100,22 @@ async function handle(u: Update) {
 
   const reply = await chat(text);
   await sendMessage(m.chat.id, reply);
+}
+
+async function welcome(chatId: number) {
+  const s = await getSettings();
+  const name = s.assistant_name ?? 'your Chief of Staff';
+  await sendMessage(
+    chatId,
+    [
+      `<b>${escape(name)}, reporting for duty${s.user_name ? `, ${escape(s.user_name)}` : ''}.</b>`,
+      'This chat is now the only one I answer.',
+      '',
+      '• Talk to me normally: tasks, reminders, plans, questions.',
+      "• Send a roster photo, PDF or spreadsheet and I'll put the shifts in your calendar.",
+      '• /brief for a briefing now. /help for the rest.',
+    ].join('\n'),
+  );
 }
 
 // ── Commands ────────────────────────────────────────────────────────────────

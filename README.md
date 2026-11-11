@@ -12,17 +12,18 @@ Project Viking.
 
 | Piece | Where |
 |---|---|
-| Telegram webhook (chat, buttons, roster import) | `supabase/functions/cos-telegram` |
-| Scheduler, every 5 min (pre-shift brief, post-shift debrief, day-off brief, reminders) | `supabase/functions/cos-scheduler` |
+| Telegram webhook (chat, buttons, roster import) | `supabase/functions/cos/telegram.ts` |
+| Scheduler, every 5 min (pre-shift brief, post-shift debrief, day-off brief, reminders, webhook registration) | `supabase/functions/cos/scheduler.ts` |
+| Google Calendar + Gmail bridge (Apps Script in your Google account) | `google-bridge/Code.gs` |
 | Chief of Staff agent (Claude + tools) | `supabase/functions/_shared/{claude,chat,tools,persona}.ts` |
 | Roster → calendar (Gemini vision, calendar sync) | `supabase/functions/_shared/{schedule,shifts}.ts` |
 | Garmin → `cos_health_daily` (hourly GitHub Action) | `workers/garmin` |
 | Schema (applied by hand; shares Viking's Supabase project) | `supabase/sql` |
 
 ```
-Telegram ─► cos-telegram ─► Chief of Staff (Claude, tools) ─► Calendar · Gmail · Viking · tasks/memory
+Telegram ─► cos/telegram ─► Chief of Staff (Claude, tools) ─► Calendar · Gmail (via Apps Script) · Viking · tasks/memory
              └─ roster file ─► Gemini ─► preview ✅ ─► Google Calendar
-pg_cron ─► cos-scheduler ─► shift-aware briefings and reminders ─► Telegram
+pg_cron ─► cos/scheduler ─► shift-aware briefings and reminders ─► Telegram
 GitHub Actions ─► Garmin sync ─► cos_health_daily
 ```
 
