@@ -1,0 +1,9 @@
+# Life-auditor shares Project Viking's Supabase project.
+# One edge function, `cos`, serves two routes:
+#   /functions/v1/cos/telegram   Telegram webhook (secret header)
+#   /functions/v1/cos/scheduler  pg_cron heartbeat (x-cron-secret)
+# Deploy: supabase functions deploy cos --project-ref <ref> --no-verify-jwt
+# The database schema is in supabase/sql/ and is applied by hand (see docs/SETUP.md).
+
+[functions.cos]
+verify_jwt = false

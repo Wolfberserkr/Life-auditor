@@ -1,0 +1,35 @@
+name: Garmin sync
+
+# Hourly Garmin → cos_health_daily. Inert until the secrets exist.
+# The repository is public, so the job prints counts only, never health data.
+
+on:
+  schedule:
+    - cron: '23 * * * *'
+  workflow_dispatch:
+
+concurrency:
+  group: garmin-sync
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    env:
+      SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+        if: ${{ env.SUPABASE_SERVICE_ROLE_KEY != '' }}
+      - uses: actions/setup-python@v5
+        if: ${{ env.SUPABASE_SERVICE_ROLE_KEY != '' }}
+        with:
+          python-version: '3.12'
+          cache: pip
+          cache-dependency-path: workers/garmin/requirements.txt
+      - name: Sync
+        if: ${{ env.SUPABASE_SERVICE_ROLE_KEY != '' }}
+        working-directory: workers/garmin
+        run: |
+          pip install -q -r requirements.txt
+          python sync.py

@@ -1,0 +1,35 @@
+name: Deploy edge functions
+
+# Deploys the `cos` edge function to the shared Supabase project when
+# they change on main. Inert until SUPABASE_ACCESS_TOKEN and
+# SUPABASE_PROJECT_REF are set. Never touches the database: the schema in
+# supabase/sql/ is applied by hand (Project Viking owns the migration history).
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'supabase/functions/**'
+      - '.github/workflows/deploy.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-cos
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    env:
+      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+      SUPABASE_PROJECT_REF: ${{ secrets.SUPABASE_PROJECT_REF }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: supabase/setup-cli@v1
+        if: ${{ env.SUPABASE_ACCESS_TOKEN != '' && env.SUPABASE_PROJECT_REF != '' }}
+        with:
+          version: latest
+      - name: Deploy
+        if: ${{ env.SUPABASE_ACCESS_TOKEN != '' && env.SUPABASE_PROJECT_REF != '' }}
+        run: |
+          supabase functions deploy cos --project-ref "$SUPABASE_PROJECT_REF" --no-verify-jwt

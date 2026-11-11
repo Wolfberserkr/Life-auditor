@@ -1,0 +1,9 @@
+{
+  "nodeModulesDir": "none",
+  "tasks": {
+    "check": "deno check supabase/functions/cos/index.ts",
+    "test": "deno test --allow-env tests/"
+  },
+  "fmt": { "lineWidth": 140, "singleQuote": true },
+  "lint": { "rules": { "exclude": ["no-explicit-any", "no-import-prefix"] } }
+}
